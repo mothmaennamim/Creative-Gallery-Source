@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  role         String   @default("customer")
+  status       String   @default("active")
+  shopName     String?
+  shopDesc     String?
+  sellerStatus String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  products       Product[]
+  reviews        Review[]
+  customerOrders Order[] @relation("CustomerOrders")
+  sellerOrders   Order[] @relation("SellerOrders")
+  payouts        PayoutRequest[]
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  price        Int
+  oldPrice     Int?
+  stock        Int      @default(0)
+  category     String
+  image        String
+  rating       Float    @default(0)
+  status       String   @default("pending")
+  rejectReason String?
+  sales        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sellerId     String
+  seller       User     @relation(fields: [sellerId], references: [id])
+  reviews      Review[]
+  orderItems   OrderItem[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  userName  String
+  rating    Int
+  comment   String
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  groupId       String
+  customerName  String
+  phone         String
+  address       String
+  area          String
+  payment       String
+  subtotal      Int
+  delivery      Int
+  total         Int
+  commission    Int
+  sellerEarning Int
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+
+  customerId    String?
+  customer      User?    @relation("CustomerOrders", fields: [customerId], references: [id])
+  sellerId      String
+  seller        User     @relation("SellerOrders", fields: [sellerId], references: [id])
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name      String
+  price     Int
+  qty       Int
+  image     String
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  text      String
+  role      String
+  createdAt DateTime @default(now())
+}
+
+model PayoutRequest {
+  id        String   @id @default(cuid())
+  sellerId  String
+  seller    User     @relation(fields: [sellerId], references: [id])
+  amount    Int
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
